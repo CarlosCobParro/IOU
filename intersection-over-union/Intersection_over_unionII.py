@@ -37,6 +37,45 @@ def bb_intersection_over_union(boxA, boxB):
     return iou
 
 
+def bb_general_intersection_over_union(boxA, boxB):
+    # determine the (x, y)-coordinates of the intersection rectangle
+    xA = max(boxA[0], boxB[0])
+    xB = min(boxA[2], boxB[2])
+
+
+    yA = max(boxA[1], boxB[1])
+    yB = min(boxA[3], boxB[3])
+
+    # compute the area of intersection rectangle
+    interArea = max(0, xB - xA + 1) * max(0, yB - yA + 1)
+
+    # compute the area of both the prediction and ground-truth
+    # rectangles
+    boxAArea = (boxA[2] - boxA[0] + 1) * (boxA[3] - boxA[1] + 1)
+    boxBArea = (boxB[2] - boxB[0] + 1) * (boxB[3] - boxB[1] + 1)
+
+
+    x1_P=min(boxB[0],boxB[2])
+    x2_P=max(boxB[0],boxB[2])
+
+    y1_P=min(boxB[1], boxB[3])
+    y2_P=min(boxB[1], boxB[3])
+
+    x1_C=min(x1_P,boxA[0])
+    x2_C=max(x2_P,boxA[2])
+
+    y1_C=min(y1_P,boxA[1])
+    y2_C=max(y2_P,boxA[3])
+
+    U=float(boxAArea + boxBArea - interArea)
+
+    interArea_C=(x2_C-x1_C)*(y2_C-y1_C)
+    iou = interArea / U
+    Giou=iou-((interArea_C-U)/interArea_C)
+
+    return Giou
+
+
 # define the list of example detections
 # examples = [
 #	Detection("image_0002.jpg", [39, 63, 203, 112], [54, 66, 198, 114]),
@@ -82,7 +121,7 @@ list_IOU = []
 # read .yaml from dictionary
 
 estado = []
-initial = (next(iter(frames_dict_GT)))
+initial = 0#(next(iter(frames_dict_GT)))
 # loop over the example detections
 while (initial < (num_of_frame - (next(iter(frames_dict_GT))))):
 
@@ -107,16 +146,17 @@ while (initial < (num_of_frame - (next(iter(frames_dict_GT))))):
             # image=flag_image
             box_gT_dict = sel_GT[l]
             box_gT_list = list(box_gT_dict)
-            box_gt_func = [box_gT_list[0], box_gT_list[1], box_gT_list[0] + box_gT_list[2],
-                           box_gT_list[1] + box_gT_list[3]]
+            box_gt_func = [box_gT_list[0], box_gT_list[1], (box_gT_list[0] + box_gT_list[2]),(box_gT_list[1] + box_gT_list[3])]
 
             for i in list(sel_video.keys()):
 
                 image = flag_image
                 image = cv2.putText(image, str(initial), (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1)
+
                 cv2.circle(image, (0, 0), 2, (0, 0, 255), 2)
                 cv2.circle(image, (256, 212), 2, (0, 0, 255), 2)
                 cv2.circle(image, (box_gT_list[0], box_gT_list[1]), 2, (0, 0, 255), 2)
+
                 image = cv2.rectangle(image, (box_gT_list[0], box_gT_list[1]),
                                       (box_gT_list[0] + box_gT_list[2], box_gT_list[1] + box_gT_list[3]),
                                       (0, 250, (l * 50)), 2)
@@ -141,10 +181,10 @@ while (initial < (num_of_frame - (next(iter(frames_dict_GT))))):
                     list_IOU_3[i] = bb_intersection_over_union(box_gt_func, box_video_list)
                     estado[l] = 1
 
-        """""cv2.imshow("USB_camera", image)
+        cv2.imshow("USB_camera", image)
         key = cv2.waitKey(0)
         while key not in [ord('q'), ord('k')]:
-            key = cv2.waitKey(0) """""
+            key = cv2.waitKey(0)
 
         if initial == 34:
             dict_IOU = {initial: {0: list_IOU_0, 1: list_IOU_1, 2: list_IOU_2, 3: list_IOU_3, "estado": estado}}
